@@ -1,0 +1,65 @@
+import feedparser
+import csv
+import hashlib
+from datetime import datetime
+import json
+import os
+
+# Version control
+VERSION = "1.0.1"
+CONFIG_HASH = hashlib.md5(json.dumps({
+    'RSS_FEEDS': [
+        'http://www.caixin.com/rss/finance.xml',
+        'http://www.xinhuanet.com/english/rss/business.xml'
+    ],
+    'KEYWORDS': {
+        'companies': ['Alibaba', 'Tencent', 'BYD'],
+        'policies': ['PBOC', 'government policy']
+    }
+}).encode()).hexdigest()
+
+def setup_environment():
+    """Create reproducible directory structure"""
+    os.makedirs('data/raw', exist_ok=True)
+    os.makedirs('data/processed', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
+
+def record_metadata():
+    """Save execution metadata"""
+    metadata = {
+        'execution_time': datetime.now().isoformat(),
+        'config_hash': CONFIG_HASH,
+        'dependencies': {
+            'feedparser': feedparser.__version__,
+            'python': '.'.join(map(str, sys.version_info[:3]))
+        }
+    }
+    
+    with open(f"logs/run_{datetime.now().strftime('%Y%m%d%H%M')}.json", 'w') as f:
+        json.dump(metadata, f)
+
+def fetch_news():
+    """Version-controlled news fetching"""
+    # Original fetch_news implementation here
+    # ...
+
+def save_snapshot(news_items):
+    """Save versioned data snapshot"""
+    timestamp = datetime.now().strftime('%Y%m%d%H%M')
+    filename = f"data/raw/snapshot_{VERSION}_{CONFIG_HASH[:6]}_{timestamp}.json"
+    
+    with open(filename, 'w') as f:
+        json.dump({
+            'version': VERSION,
+            'config_hash': CONFIG_HASH,
+            'data': news_items
+        }, f)
+
+if __name__ == "__main__":
+    setup_environment()
+    record_metadata()
+    
+    print(f"Running version {VERSION} with config {CONFIG_HASH[:6]}")
+    news = fetch_news()
+    save_snapshot(news)
+    save_to_csv(news)  # Original CSV saving function
